@@ -1,0 +1,59 @@
+// spring gradle script - searches for main class and assembles all dependencies into one main uber jar
+buildscript {
+    repositories {
+      maven {
+        url "https://plugins.gradle.org/m2/"
+      }
+      mavenCentral()
+    }
+    dependencies {
+        classpath('org.springframework.boot:spring-boot-gradle-plugin:2.0.3.RELEASE')
+// tag::build[]
+        classpath('gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0')
+// end::build[]
+    }
+}
+
+// rest of file is normal gradle stuff
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+// docker-related
+apply plugin: 'com.palantir.docker'
+
+bootJar {
+    baseName = 'spring-boot-rest-hello-world'
+    version =  '0.1.0'
+}
+
+// docker-related
+group = 'sparquelabs'
+
+// docker-related
+docker {
+    dependsOn build
+    // name becomes 'sparquelabs/spring-boot-rest-hello-world'
+    name "${project.group}/${bootJar.baseName}:${bootJar.version}"
+    // bundles files from build/libs folder
+    files bootJar.archivePath
+    // creates environment variable for Dockerfile to use 
+    // JAR_FILE = 'spring-boot-rest-hello-world.jar'
+    buildArgs(['JAR_FILE': "${bootJar.archiveName}"])
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web")
+    compile("org.springframework.boot:spring-boot-starter-actuator")
+    testCompile("org.springframework.boot:spring-boot-starter-test")
+    testCompile("junit:junit")
+}
